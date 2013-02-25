@@ -1,14 +1,7 @@
-import json
+from pprint import pprint
 
 import toml_ply as toml
 
 
-data = '''server = 128
-[config]
-a = 3
-b = 2
-[config.defaults]
-c = 2
-'''
-
-print json.dumps(toml.loads(data), indent=2)
+with open('example.toml') as f:
+    pprint(toml.loads(f.read()), indent=2)
