@@ -8,7 +8,8 @@ I just wanted to play around with PLY. I had fun so mission complete!
 Use
 ---
 
-::
+.. code-block:: python
+
     import toml_ply as toml
     with open('config.toml') as f:
         pprint(toml.loads(f.read()), indent=2)
