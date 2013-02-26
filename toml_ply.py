@@ -3,8 +3,6 @@ import ply.lex as lex
 import ply.yacc as yacc
 
 
-# Lexer
-
 tokens = ('KEY',
           'KEYGROUP',
           'EQUALS',
@@ -14,6 +12,9 @@ tokens = ('KEY',
           'INTEGER',
           )
 literals = '[,]'
+
+
+# Lexer
 
 t_ignore = ' \t'
 t_KEY = r'[a-zA-Z_][a-zA-Z0-9_]*'
