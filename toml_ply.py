@@ -3,8 +3,6 @@ import ply.lex as lex
 import ply.yacc as yacc
 
 
-ISO8601_FORMAT = '%Y-%m-%dT%H:%M:%SZ'
-
 # Lexer
 
 tokens = ('KEY',
@@ -15,6 +13,7 @@ tokens = ('KEY',
           'STRING',
           'INTEGER',
           )
+literals = '[,]'
 
 t_ignore = ' \t'
 t_KEY = r'[a-zA-Z_][a-zA-Z0-9_]*'
@@ -30,14 +29,16 @@ def t_BOOLEAN(t):
     t.value = t.value == 'true'
     return t
 
+ISO8601_FORMAT = '%Y-%m-%dT%H:%M:%SZ'
+
 def t_DATETIME(t):
     r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z'
     t.value = datetime.strptime(t.value, ISO8601_FORMAT)
     return t
 
 def t_STRING(t):
-    r'\".+\"'
-    t.value = t.value[1:-1]
+    r'"(\\"|[^"])*"'
+    t.value = t.value[1:-1].decode('string-escape')
     return t
 
 def t_INTEGER(t):
@@ -75,6 +76,7 @@ def p_assigns(p):
 
 def p_assign(p):
     '''assign : KEY EQUALS value
+              | KEY EQUALS array
               | assign KEYGROUP'''
     if isinstance(p[2], list):
         global keys
@@ -87,11 +89,38 @@ def p_assign(p):
                 d = d[k]
         d[p[1]] = p[3]
 
+def p_array(p):
+    '''
+    array : '[' array ']'
+          | array ',' array
+          | array ',' array ','
+          | value
+          '''
+    if len(p) == 2:
+        p[0] = p[1]
+    elif p[2] == ',':
+        # value, value
+        if not isinstance(p[1], list) and not isinstance(p[3], list):
+            p[0] = [p[1], p[3]]
+        # value, array
+        elif not isinstance(p[1], list) and isinstance(p[3], list):
+            p[0] = [p[1]] + p[3]
+        # array, array
+        elif isinstance(p[1], list) and isinstance(p[3], list):
+            # array, array(array)
+            if isinstance(p[3][0], list):
+                p[0] = [p[1]] + p[3]
+            else:
+                p[0] = [p[1], p[3]]
+    else:
+        p[0] = p[2]
+
 def p_value(p):
     '''value : BOOLEAN
              | DATETIME
              | STRING
-             | INTEGER'''
+             | INTEGER
+             | array'''
     p[0] = p[1]
 
 parser = yacc.yacc()
