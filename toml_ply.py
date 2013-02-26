@@ -77,7 +77,6 @@ def p_assigns(p):
 
 def p_assign(p):
     '''assign : KEY EQUALS value
-              | KEY EQUALS array
               | assign KEYGROUP'''
     if isinstance(p[2], list):
         global keys
