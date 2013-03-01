@@ -2,8 +2,7 @@
 toml-ply
 ========
 
-TOML PLY parser. Not a good one but it works (sometimes).
-I just wanted to play around with PLY. I had fun so mission complete!
+TOML PLY parser. Still missing some restrictions and error handling but mostly works :)
 
 Use
 ---
