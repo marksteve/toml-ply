@@ -69,11 +69,11 @@ class TOMLParser(object):
     tokens = tokens
 
     def p_error(self, p):
-        pass
+        raise SyntaxError()
 
-    def p_toml(self, p):
-        '''toml : assigns'''
-        p[0] = self.toml
+    def p_start(self, p):
+        '''start : assigns'''
+        p[0] = self.mapping
 
     def p_assigns(self, p):
         '''assigns : assigns assign
@@ -85,7 +85,7 @@ class TOMLParser(object):
         if isinstance(p[2], list):
             self.keys = p[2]
         else:
-            d = self.toml
+            d = self.mapping
             if self.keys:
                 for k in self.keys:
                     d.setdefault(k, {})
@@ -93,37 +93,25 @@ class TOMLParser(object):
             d[p[1]] = p[3]
 
     def p_array(self, p):
-        '''
-        array : '[' array ']'
-              | array ',' array
-              | array ',' array ','
-              | value
-              '''
-        if len(p) == 2:
-            p[0] = p[1]
-        elif p[2] == ',':
-            # value, value
-            if not isinstance(p[1], list) and not isinstance(p[3], list):
-                p[0] = [p[1], p[3]]
-            # value, array
-            elif not isinstance(p[1], list) and isinstance(p[3], list):
-                p[0] = [p[1]] + p[3]
-            # array, array
-            elif isinstance(p[1], list) and isinstance(p[3], list):
-                # array, array(array)
-                if isinstance(p[3][0], list):
-                    p[0] = [p[1]] + p[3]
-                else:
-                    p[0] = [p[1], p[3]]
+        '''array : '[' seq ']'
+                 '''
+        p[0] = p[2]
+
+    def p_seq(self, p):
+        '''seq : value ',' seq
+               | value ','
+               | value'''
+        if len(p) < 4:
+            p[0] = [p[1]]
         else:
-            p[0] = p[2]
+            p[0] = [p[1]] + p[3]
 
     def p_value(self, p):
-        '''value : BOOLEAN
+        '''value : array
+                 | BOOLEAN
                  | DATETIME
                  | STRING
-                 | INTEGER
-                 | array'''
+                 | INTEGER'''
         p[0] = p[1]
 
     def __init__(self):
@@ -131,7 +119,8 @@ class TOMLParser(object):
         self.parser = yacc.yacc(module=self, debug=0, write_tables=0)
 
     def parse(self, s):
-        self.toml = dict()
+        # Reset mapping and keys
+        self.mapping= dict()
         self.keys = []
         return self.parser.parse(s)
 
