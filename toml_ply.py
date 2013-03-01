@@ -69,7 +69,7 @@ class TOMLParser(object):
     tokens = tokens
 
     def p_error(self, p):
-        raise SyntaxError()
+        raise SyntaxError(repr(p))
 
     def p_start(self, p):
         '''start : assigns'''
