@@ -1,0 +1,7 @@
+positive = 3
+negative = -3
+golden_ratio = 1.61803398875
+pi = 3.14159265359
+neg_pi = -3.14159265359
+no_dec = 1.
+array_of_floats = [1.61803398875, 3.14159265359, -3.14159265359]

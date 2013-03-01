@@ -9,6 +9,7 @@ tokens = ('KEY',
           'BOOLEAN',
           'DATETIME',
           'STRING',
+          'FLOAT',
           'INTEGER',
           )
 literals = '[,]'
@@ -55,8 +56,13 @@ def t_STRING(t):
     t.value = t.value[1:-1].decode('string-escape')
     return t
 
+def t_FLOAT(t):
+    r'-?\d+\.\d*'
+    t.value = float(t.value)
+    return t
+
 def t_INTEGER(t):
-    r'\d+'
+    r'-?\d+'
     t.value = int(t.value)
     return t
 
@@ -115,6 +121,7 @@ class TOMLParser(object):
                  | BOOLEAN
                  | DATETIME
                  | STRING
+                 | FLOAT
                  | INTEGER'''
         p[0] = p[1]
 
