@@ -28,20 +28,22 @@ def t_newline(t):
     t.lexer.lineno += len(t.value)
 
 def t_error(t):
-    print "Illegal character '%s'" % t.value[0]
-    t.lexer.skip(1)
+    raise SyntaxError(repr(t))
 
-t_KEY = r'[a-zA-Z_][a-zA-Z0-9_#\?]*'
 t_EQUALS = r'='
-
-def t_KEYGROUP(t):
-    r'\[[a-zA-Z_][a-zA-Z0-9_#\?\.]*\]'
-    t.value = t.value[1:-1].split('.')
-    return t
 
 def t_BOOLEAN(t):
     r'true|false'
     t.value = t.value == 'true'
+    return t
+
+def t_KEY(t):
+    r'[a-zA-Z_][a-zA-Z0-9_#\?]*'
+    return t
+
+def t_KEYGROUP(t):
+    r'\[([a-zA-Z_][a-zA-Z0-9_#\?]*\.?)+\]'
+    t.value = tuple(t.value[1:-1].split('.'))
     return t
 
 ISO8601_FORMAT = '%Y-%m-%dT%H:%M:%SZ'
@@ -57,7 +59,7 @@ def t_STRING(t):
     return t
 
 def t_FLOAT(t):
-    r'-?\d+\.\d*'
+    r'-?\d+\.\d+'
     t.value = float(t.value)
     return t
 
@@ -86,20 +88,34 @@ class TOMLParser(object):
         '''assigns : assigns assign
                    | assign'''
 
+    def __check_keygroup(self, keygroup):
+        if keygroup in self.keygroups:
+            return False
+        else:
+            return True
+
     def p_assign(self, p):
         '''assign : KEY EQUALS value
                   | assign KEYGROUP
                   | KEYGROUP'''
-        if isinstance(p[1], list):
-            self.keys = p[1]
-        elif isinstance(p[2], list):
-            self.keys = p[2]
+        if isinstance(p[1], tuple):
+            if not self.__check_keygroup(p[1]):
+                raise SyntaxError
+            self.keygroups.add(p[1])
+            self.keygroup = p[1]
+        elif isinstance(p[2], tuple):
+            if not self.__check_keygroup(p[2]):
+                raise SyntaxError
+            self.keygroups.add(p[2])
+            self.keygroup = p[2]
         else:
             d = self.mapping
-            if self.keys:
-                for k in self.keys:
+            if self.keygroup:
+                for k in self.keygroup:
                     d.setdefault(k, {})
                     d = d[k]
+            if p[1] in d:
+                raise SyntaxError
             d[p[1]] = p[3]
 
     def p_array(self, p):
@@ -110,9 +126,13 @@ class TOMLParser(object):
     def p_seq(self, p):
         '''seq : value ',' seq
                | value ','
-               | value'''
+               | value
+               |'''
         if len(p) < 4:
-            p[0] = [p[1]]
+            if len(p) == 1:
+                p[0] = []
+            else:
+                p[0] = [p[1]]
         else:
             p[0] = [p[1]] + p[3]
 
@@ -130,9 +150,10 @@ class TOMLParser(object):
         self.parser = yacc.yacc(module=self, debug=0, write_tables=0)
 
     def parse(self, s):
-        # Reset mapping and keys
+        # Reset mapping andkeygroup 
         self.mapping= dict()
-        self.keys = []
+        self.keygroup = tuple()
+        self.keygroups = set()
         return self.parser.parse(s)
 
 
